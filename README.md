@@ -81,7 +81,7 @@ In it you can configure some parameters, though the only significant ones are:
 
 The following features are planned for future releases:
 1. **Model Training**: Implementation of LatentMol-BERT using PyTorch. Auxiliary training tasks are supposed to be:
-2. 1. NSP(Next Sentence Prediction)-like prediction of multiple molecules for preperation of reaction modelling
+   1. NSP(Next Sentence Prediction)-like prediction of multiple molecules for preperation of reaction modelling
    2. MSM(Masked Sequence Modelling) so basically Diffusion
    3. Reconstruction via a Decoder-Head
    4. experimental exercises involving image-data such as structure drawings and spectral data 
