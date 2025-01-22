@@ -1,6 +1,6 @@
 # LatentMol: Preprocessing Pipeline for Deep Molecular Representation Learning
 
-Welcome to the **LatentMol** repository! This project focuses on the development of a holistic molecular input format designed to enhance data-driven modeling in chemistry. The repository currently contains the **preprocessing pipeline**, which serves as the foundation for preparing large datasets for future model training.
+Welcome to the **LatentMol** repository! This project focuses on the development of a holistic molecular input format designed to enhance data-driven modeling in chemistry. The repository currently contains the unfinished but roughly functional **preprocessing pipeline**, which serves as the foundation for preparing large datasets for future model training.
 
 ---
 
