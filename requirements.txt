@@ -1,0 +1,10 @@
+# Core dependencies
+matplotlib==3.10.0      # Bibliothek für Datenvisualisierung
+numpy==2.2.2            # Numerische Berechnungen und Arrays
+requests==2.32.3        # HTTP-Bibliothek für API-Anfragen
+tensorflow==2.18.0      # Deep Learning Framework
+tqdm==4.67.1            # Fortschrittsbalken für Schleifen
+
+# Optional dependencies (falls benötigt)
+scipy==1.11.3           # Wissenschaftliche Berechnungen (optional)
+pandas==2.1.1           # Datenanalyse und -manipulation (optional)

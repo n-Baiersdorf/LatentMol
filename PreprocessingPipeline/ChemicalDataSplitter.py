@@ -2,6 +2,10 @@ import os
 import re
 from tqdm import tqdm
 
+
+'''The ChemicalDataSplitter class takes in a long input text file - i.e. from PubChem - and splits all the entries 
+   into single text files in the output directory.'''
+
 class ChemicalDataSplitter:
 
     def __init__(self, input_file, output_directory):

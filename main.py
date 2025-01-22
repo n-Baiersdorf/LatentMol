@@ -1,34 +1,28 @@
-from PreprocessingPipeline.split_data_entries import ChemicalDataSplitter
-from PreprocessingPipeline.sort_molecules_for_viability_via_element_analysis import MoleculeFilter
-from PreprocessingPipeline.JSONtoNPYConverter import JsonToNpyConverter
-from PreprocessingPipeline.MEntrySorter import NMRShiftDBOrganizer
-from PreprocessingPipeline.MOL_to_SEQUENCE import MoleculeProcessor, molToSequenceFunction
-from PreprocessingPipeline.split_data_entries import ChemicalDataSplitter
-from PreprocessingPipeline.split_atoms_and_bonds import JsonSplitter
-from PreprocessingPipeline.AtomBondMerger import JSONListMerger
+from PreprocessingPipeline.ChemicalDataSplitter import ChemicalDataSplitter
+from PreprocessingPipeline.MoleculeElementFilter import MoleculeElementFilter
+from PreprocessingPipeline.M_EntrySorter import M_EntrySorter
+from PreprocessingPipeline.MolToSequence import molToSequenceFunction
+from PreprocessingPipeline.ChemicalDataSplitter import ChemicalDataSplitter
 from PreprocessingPipeline.LengthSorter import MoleculeFileSorter
 from PreprocessingPipeline.DirectoryAnalyzer import DirectoryAnalyzer
 from PreprocessingPipeline.LengthFilter import LengthFilterer
-from PreprocessingPipeline.DatasetCreator import DatasetCreator
-from PreprocessingPipeline.augmentation.shuffle_for_augmentation import MoleculeSampleShuffler
-from PreprocessingPipeline.antisplit_molecules import TextFileCombiner
+from PreprocessingPipeline.augmentation.MoleculeSampleShuffler import MoleculeSampleShuffler
+from PreprocessingPipeline.TextFileCombiner import TextFileCombiner
 from misc.download_data import download_and_extract_pubchem_compounds
-# from wandb.keras import WandbMetricsLogger, WandbModelCheckpoint
 
 import os
-import tensorflow as tf
-import wandb
-
-temp = "temporary"
-data = "data"
-data_source = "data/src"
 
 
-""" This is the Main Script. From here everything else will be called and managed..."""
-ATOM_DIMENSION = 12 # Number of atom-Constants
-MAX_BONDS = 4 # Maximale Anzahl von Bindungen Oktett-regel
+'''This Main Script Downloads PubChem Data in MolTable format and transforms it into LatentMol's relativistic
+   graph sequences for deep learning with Transformers.
+   For this it works through all the steps calling external scripts.'''
+
+
+
+ATOM_DIMENSION = 12 # Number of atom-Constants --> depends on the Dictionary 
+MAX_BONDS = 4 # Maximale Anzahl von Bindungen Oktett-regel -->
 MOL_MAX_LENGTH = 200 # Parameter zum Einstellen der maximalen Länge von Molekülen
-MAX_PERMUTATIONS = 5
+MAX_PERMUTATIONS = 5 # These are the augmented Versions --> Set it to the value that you want. Pobably something line 1000 would be appropriate. Although that would result in huge amounts of samples.
 
 class Verarbeiter():
     def __init__(self, ):
@@ -84,7 +78,7 @@ class Verarbeiter():
                 invalid_output_dir = os.path.join(base_dir, f'temp/{filename}/obsolete/invalid_files')
                 allowed_elements = ["H", "C", "O", "N", "F", "P", "S", "Cl", "Br", "I"]
                 
-                molecule_filter = MoleculeFilter(filtered_split_dir, valid_output_dir, invalid_output_dir, allowed_elements)
+                molecule_filter = MoleculeElementFilter(filtered_split_dir, valid_output_dir, invalid_output_dir, allowed_elements)
                 molecule_filter.filter_molecules()
 
                 # 4: filtering for isotopes...
@@ -94,7 +88,7 @@ class Verarbeiter():
 
                 significant_output = os.path.join(base_dir, f'temp/{filename}/IV_with_Other_M')
                 
-                organizer = NMRShiftDBOrganizer(valid_output_dir, output_dir_chg, output_dir_iso, output_dir_end, significant_output)
+                organizer = M_EntrySorter(valid_output_dir, output_dir_chg, output_dir_iso, output_dir_end, significant_output)
                 organizer.organize_files()
 
 
@@ -126,46 +120,16 @@ class Verarbeiter():
         output_dir = f"data/Output_{MAX_PERMUTATIONS}"
         molToSequenceFunction(input_file, output_dir, number)
 
-        
-
-    def _prepare_data_step_III():
-        exit
-        
-
-    def _prepare_data_step_IV():
-        # 5: Create Datasets for length
-        save_path_dataset = os.path.join("subdatasets", f"length_{number}")
-        
-        creator = DatasetCreator()
-        dataset = creator.create_and_save_dataset(
-            npy_output,
-            save_path_dataset,
-            dataset_name=f"dataset_{number}",
-            shuffle=True
-        )
-
 
 if __name__ == "__main__":
-
-    # Präambel: Check GPU
-    gpus = tf.config.list_physical_devices('GPU')
-    if gpus:
-        for gpu in gpus:
-            print("Name:", gpu.name, "  Type:", gpu.device_type)
-    else:
-        print("No GPUs detected")
-
     # Script Beginn
-    
-    '''download_and_extract_pubchem_compounds(
+    download_and_extract_pubchem_compounds(
         output_dir="data/raw/pubchem_compounds",  # Directory to store extracted files
         start=1,                         # Start of compound range
         end=500000,                     # End of compound range (adjust as needed)
         step=500000                      # Step size for each file batch
-    )'''
+    )
     
-    #db_file = "Compound_000000001_000500000.sdf"
-    #db_file = "nmrshiftdb2.nmredata.sd"
     db_file_directory = "data/src/pubchem_compounds"
     
     this = Verarbeiter()

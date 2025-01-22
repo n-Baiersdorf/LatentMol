@@ -2,7 +2,12 @@ import os
 import shutil
 from tqdm import tqdm
 
-class NMRShiftDBOrganizer:
+"""The 'M-Entries' are a thing in Moltables. They include additional information such as Charges, non-standart
+   Isotopes and stuff like that, if present in the molecule. All moltables end with 'M  END'. By filtering any
+   molecules with special M Entries, the data gets more uniform, for that the Preprocessing Pipeline is not designed
+   to handel these special cases. Later this could change."""
+
+class M_EntrySorter:
     def __init__(self, input_directory, output_directory_chg, output_directory_iso, output_directory_other, output_directory_end):
         self.input_directory = input_directory
         self.output_directory_chg = output_directory_chg
@@ -78,5 +83,5 @@ if __name__ == "__main__":
     output_dir_other = 'data/temp/M/with_Other_M'
     output_dir_end = 'data/temp/M/with_M_END'
 
-    organizer = NMRShiftDBOrganizer(input_dir, output_dir_chg, output_dir_iso, output_dir_other, output_dir_end)
+    organizer = M_EntrySorter(input_dir, output_dir_chg, output_dir_iso, output_dir_other, output_dir_end)
     organizer.organize_files()

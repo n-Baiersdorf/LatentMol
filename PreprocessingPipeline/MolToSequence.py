@@ -3,7 +3,12 @@ import os
 import json
 from misc.PSE_Data import atom_dict_normalized as atom_constants
 
-class MoleculeProcessor:
+
+"""The MolToSequence Script is the most important script. This Script takes in text a text file with Moltables and 
+   transforms them into the LatentMol sequence format."""
+
+
+class MolToSequence:
     def __init__(self):
         self.SEM_PAD = -1
         self.MAX_BONDS = 4
@@ -169,7 +174,7 @@ def molToSequenceFunction(input_path: str, output_dir: str, number: int):
     
     # Process the molecules
     try:
-        processor = MoleculeProcessor()
+        processor = MolToSequence()
         molecules_dict = processor.parse_mol_file(input_path)
         
         # Write to file, ensuring the parent directory exists

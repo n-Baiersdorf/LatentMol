@@ -1,6 +1,12 @@
 import os
 import re
 
+
+"""This Script takes in a directory with many small text files each containing but one moltable. It then combines
+   them into one quite long text file.
+   It uses '###ID###' as a divider where ID is the ID of the molecule in the database."""
+
+
 class TextFileCombiner:
     def __init__(self, input_directory, output_file):
         self.input_directory = input_directory

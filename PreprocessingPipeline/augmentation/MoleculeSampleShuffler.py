@@ -6,6 +6,12 @@ from tqdm import tqdm
 import math
 from multiprocessing import Pool
 
+
+"""This script takes in a file containing many moltables. It then creates a specified number of random permutations 
+   these permutations basically mix up all the indexes, while keeping the relative structure of the molfile the same.
+   this can be seen as augmentation."""
+
+
 class MoleculeStructure(NamedTuple):
     header: List[str]
     atoms: List[str]

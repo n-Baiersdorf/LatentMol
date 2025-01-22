@@ -2,7 +2,14 @@ import os
 import shutil
 from tqdm import tqdm
 
-class MoleculeFilter:
+
+"""The MoleculeElementFilter Script is receiving a directory filled with files containing one Moltable each.
+   It checks all elements present and based on the specified selection filteres all the moltables out that contain 
+   elements not part of the specified list. This is because some elements might be present in such a small amount,
+   and removing them may make the dataset more robust."""
+
+
+class MoleculeElementFilter:
     # Comprehensive Periodic Table dictionary
     PERIODIC_TABLE = {
         'H': 'Hydrogen', 'He': 'Helium', 'Li': 'Lithium', 'Be': 'Beryllium', 'B': 'Boron', 
@@ -91,5 +98,5 @@ if __name__ == "__main__":
     invalid_output_dir = 'data/temp/invalid_files'
     allowed_elements = ["H", "C", "O", "N", "F", "P", "S", "Cl", "Se", "Br", "I", "Si"]
     
-    molecule_filter = MoleculeFilter(input_dir, valid_output_dir, invalid_output_dir, allowed_elements)
+    molecule_filter = MoleculeElementFilter(input_dir, valid_output_dir, invalid_output_dir, allowed_elements)
     molecule_filter.filter_molecules()
