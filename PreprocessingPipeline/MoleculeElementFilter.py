@@ -100,3 +100,6 @@ if __name__ == "__main__":
     
     molecule_filter = MoleculeElementFilter(input_dir, valid_output_dir, invalid_output_dir, allowed_elements)
     molecule_filter.filter_molecules()
+
+# Copyright (c) 2025 Noah Baiersdorf
+# This software is released under the MIT License.

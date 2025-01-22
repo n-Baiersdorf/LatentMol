@@ -192,3 +192,6 @@ if __name__ == "__main__":
     output_dir = "data/testTest"
     number = 1
     molToSequenceFunction(input_path, output_dir, number)
+
+# Copyright (c) 2025 Noah Baiersdorf
+# This software is released under the MIT License.

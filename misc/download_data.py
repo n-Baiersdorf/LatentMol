@@ -54,3 +54,7 @@ if __name__ == "__main__":
         end=173000000,                     # End of compound range (adjust as needed)
         step=500000                      # Step size for each file batch
     )
+
+
+# Copyright (c) 2025 Noah Baiersdorf
+# This software is released under the MIT License.

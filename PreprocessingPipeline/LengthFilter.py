@@ -90,9 +90,7 @@ class LengthFilterer:
         except PermissionError:
             raise PermissionError(f"Keine Berechtigung zum Erstellen des Verzeichnisses: {directory_path}")
 
-if __name__ == "__main__":
-    sorter = LengthSorter(max_length=50)
-    try:
-        sorter.filter_and_copy("pfad/zum/eingabeverzeichnis", "pfad/zum/ausgabeverzeichnis")
-    except Exception as e:
-        print(f"Fehler bei der Verarbeitung: {str(e)}")
+
+
+# Copyright (c) 2025 Noah Baiersdorf
+# This software is released under the MIT License.

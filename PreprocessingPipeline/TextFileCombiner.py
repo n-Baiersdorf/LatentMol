@@ -44,3 +44,7 @@ if __name__ == "__main__":
     # Usage of the class with a specified output directory
     combiner = TextFileCombiner("data_II/original_data/10", "chosen_directory/ausgabe.txt")
     combiner.run()
+
+
+# Copyright (c) 2025 Noah Baiersdorf
+# This software is released under the MIT License.

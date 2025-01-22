@@ -181,3 +181,7 @@ if __name__ == "__main__":
     max_permutations_limit = 1000000  # Set to a specific number to limit permutations or None for all
 
     MoleculeSampleShuffler.shuffle_molecules(input_file, output_directory, max_permutations_limit)
+
+
+# Copyright (c) 2025 Noah Baiersdorf
+# This software is released under the MIT License.

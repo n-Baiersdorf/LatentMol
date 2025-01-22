@@ -176,5 +176,5 @@ if __name__ == "__main__":
     this._make_sequence_data()                # convert it into the LatentMol Sequence format
 
 
-
-
+# Copyright (c) 2025 Noah Baiersdorf
+# This software is released under the MIT License.

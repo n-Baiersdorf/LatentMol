@@ -70,6 +70,6 @@ class ChemicalDataSplitter:
 
         print(f"Splitting complete. Files created in {self.output_directory}")
 
-# Example usage:
-# splitter = ChemicalDataSplitter('input.txt', 'output_directory')
-# splitter.split_file()
+
+# Copyright (c) 2025 Noah Baiersdorf
+# This software is released under the MIT License.

@@ -110,3 +110,6 @@ if __name__ == "__main__":
         sorter.sort_files("data/temp/with_Other_M", "data/test_sort")
     except Exception as e:
         print(f"Fehler bei der Verarbeitung: {str(e)}")
+
+# Copyright (c) 2025 Noah Baiersdorf
+# This software is released under the MIT License.

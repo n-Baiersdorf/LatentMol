@@ -245,3 +245,7 @@ if __name__ == "__main__":
     print("----------------------------------")
 
     print(data.file_counts)
+
+
+# Copyright (c) 2025 Noah Baiersdorf
+# This software is released under the MIT License.

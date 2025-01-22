@@ -85,3 +85,6 @@ if __name__ == "__main__":
 
     organizer = M_EntrySorter(input_dir, output_dir_chg, output_dir_iso, output_dir_other, output_dir_end)
     organizer.organize_files()
+
+# Copyright (c) 2025 Noah Baiersdorf
+# This software is released under the MIT License.

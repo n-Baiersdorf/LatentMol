@@ -341,3 +341,7 @@ if __name__ == "__main__":
     # Example usage
     creator = DatasetCreator()
     creator.load_saved_dataset()
+
+
+# Copyright (c) 2025 Noah Baiersdorf
+# This software is released under the MIT License.

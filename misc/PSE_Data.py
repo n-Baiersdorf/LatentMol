@@ -23,7 +23,7 @@ def normalize_value(value, normalization_type, column_index):
 # 2: Min-max normalization
 normalization_config = [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2]
 
-# Pre-computed normalized dictionary
+# Pre-computed normalized dictionary            
 atom_dict_normalized = {
     element: [normalize_value(val, normalization_config[i], i) 
              for i, val in enumerate(values)]
@@ -56,3 +56,8 @@ atom_dict_normalized = {
 # EA: Electron Affinity (kJ/mol)
 # VAL: Valence Electrons (dimensionless)
 # OX: Common Oxidation State (dimensionless)
+
+
+
+# Copyright (c) 2025 Noah Baiersdorf
+# This software is released under the MIT License.
