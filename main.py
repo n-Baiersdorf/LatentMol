@@ -21,8 +21,8 @@ import re
 
 
 ATOM_DIMENSION = 12 # Number of atom-Constants --> depends on the Dictionary 
-MAX_BONDS = 4 # Maximale Anzahl von Bindungen Oktett-regel -->
-MOL_MAX_LENGTH = 50 # Parameter zum Einstellen der maximalen Länge von Molekülen
+MAX_BONDS = 4 # max number of bonds: default is 4 --> Octet rule (As each bond contains two electrons [Hydrogen gets handeled specially])
+MOL_MAX_LENGTH = 50 # max length of molecules: the "length" refers to the number of atoms notated in the moltable --> many implicit Hydrogens are not counted
 MAX_PERMUTATIONS = 5 # These are the augmented Versions --> Set it to the value that you want. Pobably something line 1000 would be appropriate. Although that would result in huge amounts of samples.
 
 class Verarbeiter():
@@ -48,30 +48,21 @@ class Verarbeiter():
     
 
     def _prepare_raw_data_substep_I(self, db_file_directory, base_dir):
-
-
-
         # Process all the molecule files from the database file directory
         
         counter = 0
 
         for filename in os.listdir(db_file_directory):
             if filename.endswith(('.sdf', 'sd', 'txt')):  # Check for .sdf files
-                
                 counter = counter + 1
-
                 file_path = os.path.join(db_file_directory, filename)
-
                 split_dir = os.path.join(base_dir,f'temp/split_db')
-
-
-                # 1: Split each molecule from the current .sdf file
+               
+               # 1: Split each molecule from the current .sdf file
                 print(f"Processing file: {filename}")
                 splitter = ChemicalDataSplitter(file_path, split_dir)
                 splitter.split_file()
 
-        
-                
                 # 2: Filter out too long molecules
                 filtered_split_dir = os.path.join(base_dir,f'temp/II_split_db_filtered_lengthwise')
                 sorter = LengthFilterer(max_length=MOL_MAX_LENGTH)
@@ -95,17 +86,12 @@ class Verarbeiter():
                 organizer = M_EntrySorter(valid_output_dir, output_dir_chg, output_dir_iso, output_dir_end, significant_output)
                 organizer.organize_files()
 
-
-                
-
                 # 5: Sort in lengths
                 sorter = MoleculeFileSorter()
                 output_dir = os.path.join(base_dir, f'temp/V_original_data')
                 sorter.sort_files(significant_output, output_dir)
 
-
     def _prepare_raw_data_substep_II(self, base_dir1, number):
-
         input_dir = os.path.join(base_dir1, "temp/V_original_data",str(number))
 
         # 1: Combine all individual files into one long file based on the file length 
@@ -115,11 +101,10 @@ class Verarbeiter():
 
         # 2: apply Augmentation
         output_directory = f"data/temp_II/augmented_data/"  # Specify your desired output directory here
-        
         MoleculeSampleShuffler.shuffle_molecules(output_dir, output_directory, MAX_PERMUTATIONS)
 
         
-    def extract_numbers_from_filenames(self, directory):
+    def extract_numbers_from_filenames(self, directory): 
         numbers = []
         for filename in os.listdir(directory):
             # Extract numbers from the filename using regex
@@ -127,12 +112,11 @@ class Verarbeiter():
             # Convert the found numbers to integers and add to the list
             numbers.extend(map(int, found_numbers))
         return sorted(numbers)
+       
  
     def _make_sequence_data(self):
         numbers = self.extract_numbers_from_filenames("data/temp_II/augmented_data") 
         
-
-
         print("hello world")
         for i in numbers:
             print("----------------------------------------")
@@ -141,7 +125,6 @@ class Verarbeiter():
             input_file = os.path.join(f"data/temp_II/augmented_data/shuffled_molecules_{i}.txt")
             output_dir = f"data/Output_{MAX_PERMUTATIONS}"
             molToSequenceFunction(input_file, output_dir, i)
-
 
 
 def create_directory_structure():
@@ -155,13 +138,10 @@ def create_directory_structure():
 
 
 if __name__ == "__main__":
-
     # Setup
     create_directory_structure()
 
-
-    
-    # Script Beginn
+    # Script begin
     download_and_extract_pubchem_compounds(
         output_dir="data/src/pubchem_compounds",  # Directory to store extracted files
         start=1,                         # Start of compound range
