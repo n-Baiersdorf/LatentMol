@@ -1,0 +1,60 @@
+Project Name: LatentMol
+
+Copyright 2025 Noah Baiersdorf
+
+This project includes software developed by third parties, distributed under their respective licenses as detailed below:
+
+---
+
+### Standard Library Modules
+The following modules are part of the Python Standard Library and are licensed under the Python Software Foundation License (PSFL):
+- os
+- re
+- json
+- typing
+- shutil
+- pathlib
+- concurrent.futures
+- gzip
+- math
+
+For more information, see: https://docs.python.org/3/license.html
+
+---
+
+### Third-Party Dependencies
+
+1. **tqdm**
+   - License: MIT License
+   - Copyright: tqdm contributors
+   - See: https://github.com/tqdm/tqdm
+
+2. **NumPy**
+   - License: BSD 3-Clause License
+   - Copyright: NumPy Developers
+   - See: https://numpy.org/doc/stable/license.html
+
+3. **Matplotlib**
+   - License: PSF/BSD-compatible License
+   - Copyright: Matplotlib Development Team
+   - See: https://matplotlib.org/stable/project/license.html
+
+4. **TensorFlow**
+   - License: Apache License 2.0
+   - Copyright: Google Brain Team
+   - See: https://github.com/tensorflow/tensorflow/blob/master/LICENSE
+
+5. **multiprocess**
+   - License: BSD 3-Clause License
+   - Copyright: multiprocess contributors
+   - See: https://pypi.org/project/multiprocess/
+
+6. **requests**
+   - License: Apache License 2.0
+   - Copyright: Kenneth Reitz and contributors
+   - See: https://github.com/psf/requests/blob/main/LICENSE
+
+---
+
+### Notes on Usage
+This NOTICE file is provided for informational purposes and does not modify the terms of any licenses referenced above.
