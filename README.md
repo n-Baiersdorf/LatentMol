@@ -68,11 +68,15 @@ To set up the preprocessing pipeline, follow these steps:
 
 
 4. Activate virtual environment:
-   Linux & MacOS: ```source myenv/bin/activate```
-   Windows (cmd): ```myenv\Scripts\activate.bat```
 
 
-5. Install dependencies:
+   Linux & MacOS: ```source .venv/bin/activate```
+
+
+   Windows: ```.venv/bin/activate```
+
+
+6. Install dependencies:
 
 
 ```pip install -r requirements.txt```
