@@ -54,22 +54,36 @@ To set up the preprocessing pipeline, follow these steps:
 1. Clone this repository:
 
 
-'git clone https://github.com/yourusername/latentmol.git
-cd latentmol'
+```git clone https://github.com/n-Baiersdorf/LatentMol.git```
+```cd latentmol```
+>
+
+2. Ensure you have Python 3.8+ installed
 
 
-2. Install dependencies:
+3. Create virtual environment:
 
 
-'pip install -r requirements.txt'
+```python -m venv myenv```
 
 
-3. Ensure you have Python 3.8+ installed 
+4. Activate virtual environment:
+   Linux & MacOS: ```source myenv/bin/activate```
+   Windows (cmd): ```myenv\Scripts\activate.bat```
+
+
+5. Install dependencies:
+
+
+```pip install -r requirements.txt```
+
+
+
 ---
 
 ## Usage
 
-Run the 'main.py' script
+Run the ```main.py``` script
 
 In it you can configure some parameters, though the only significant ones are:
 1. The Number of Permutations (these are augmented versions of molecules)
