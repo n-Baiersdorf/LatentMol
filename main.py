@@ -123,8 +123,19 @@ class Verarbeiter():
             print(f"Start with MolToSequence conversion of the molecules with length: {i} out of {MOL_MAX_LENGTH}")
 
             input_file = os.path.join(f"data/temp_II/augmented_data/shuffled_molecules_{i}.txt")
-            output_dir = f"data/Output_{MAX_PERMUTATIONS}"
+            output_dir = f"data/output_molsequences_{MAX_PERMUTATIONS}"   # f"data/Output_{MAX_PERMUTATIONS}"
             molToSequenceFunction(input_file, output_dir, i)
+
+
+            config = {
+                    "en_diff_max": 1.79,
+                    "use_fixed_ch_diff": True,
+                    "default_ch_endiff": 0.25
+                }
+
+            test_number = 1
+            molToSequenceFunction(input_file, output_dir, test_number, config=config)
+
 
 
 def create_directory_structure():
@@ -142,17 +153,17 @@ if __name__ == "__main__":
     create_directory_structure()
 
     # Script begin
-    download_and_extract_pubchem_compounds(
+    ''' download_and_extract_pubchem_compounds(
         output_dir="data/src/pubchem_compounds",  # Directory to store extracted files
         start=1,                         # Start of compound range
         end=500000,                     # End of compound range (adjust as needed)
         step=500000                      # Step size for each file batch
-    )
+    )'''
     
     db_file_directory = "data/src/pubchem_compounds/"
     
     this = Verarbeiter()
-    this.prepare_raw_data(db_file_directory)  # prepare the raw data
+    #  this.prepare_raw_data(db_file_directory)  # prepare the raw data
     this._make_sequence_data()                # convert it into the LatentMol Sequence format
 
 

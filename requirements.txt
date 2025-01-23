@@ -1,7 +1,18 @@
-# Core dependencies
-matplotlib==3.10.0      # Bibliothek für Datenvisualisierung
-numpy==1.26.0            # Numerische Berechnungen und Arrays
-requests==2.32.3        # HTTP-Bibliothek für API-Anfragen
-tensorflow==2.18.0      # Deep Learning Framework
-tqdm==4.67.1            # Fortschrittsbalken für Schleifen
+# Core Dependencies
+matplotlib==3.10.0
+numpy==1.26.0
+requests==2.32.3
+tensorflow==2.18.0
+tqdm==4.67.1
 
+# Additional Dependencies
+multiprocess==0.70.15
+
+# Development Dependencies
+pytest==7.4.3
+black==23.11.0
+flake8==6.1.0
+mypy==1.7.0
+
+# Documentation
+Sphinx==7.2.6
