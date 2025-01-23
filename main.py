@@ -153,17 +153,17 @@ if __name__ == "__main__":
     create_directory_structure()
 
     # Script begin
-    ''' download_and_extract_pubchem_compounds(
+    download_and_extract_pubchem_compounds(
         output_dir="data/src/pubchem_compounds",  # Directory to store extracted files
         start=1,                         # Start of compound range
         end=500000,                     # End of compound range (adjust as needed)
         step=500000                      # Step size for each file batch
-    )'''
+    )
     
     db_file_directory = "data/src/pubchem_compounds/"
     
     this = Verarbeiter()
-    #  this.prepare_raw_data(db_file_directory)  # prepare the raw data
+    this.prepare_raw_data(db_file_directory)  # prepare the raw data
     this._make_sequence_data()                # convert it into the LatentMol Sequence format
 
 
