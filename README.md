@@ -32,9 +32,18 @@ The long-term goal is to enable applications such as reaction modeling, spectros
 
 At this stage, the repository includes:
 1. **Preprocessing Pipeline**: Converts molecular data (e.g., MolTables) into a custom sequence format for training Transformer models.
-   - It filters molecules based on length, elements, and isotopes for consistency.
-   - Normalizes appropriatly for tanh as activation function (for the input layers of the Transformer model)
-2. **Basic Sequence Transformation**: Implements the foundation of the LatentMol input format.
+   - Filters molecules based on length, elements, and isotopes for consistency
+   - Normalizes appropriately for tanh activation function in Transformer input layers
+
+2. **Basic Sequence Transformation**: Implements the foundation of the LatentMol input format
+
+## Experimental Branch: NMR-Prediction-Transformer
+
+This experimental branch explores training a Transformer model on NMRShiftDB2 data from the University of Cologne. The approach:
+
+- Handles NMR prediction as a sequence-to-sequence task
+- Processes variable-length NMR spectra sequences
+- Implements a molecule-to-spectrum model using LatentMol sequence format
 
 ---
 
