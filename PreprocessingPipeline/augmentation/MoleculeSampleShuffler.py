@@ -176,9 +176,9 @@ class MoleculeSampleShuffler:
 
 
 if __name__ == "__main__":
-    input_file = "data_II/data_length_sorted/molecules_8.txt"
+    input_file = "data/temp_II/original_data/molecules_8.txt"
     output_directory = "output/length_8"  # Specify your desired output directory here
-    max_permutations_limit = 1000000  # Set to a specific number to limit permutations or None for all
+    max_permutations_limit = 5  # Set to a specific number to limit permutations or None for all
 
     MoleculeSampleShuffler.shuffle_molecules(input_file, output_directory, max_permutations_limit)
 

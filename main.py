@@ -9,7 +9,11 @@ from PreprocessingPipeline.LengthFilter import LengthFilterer
 from PreprocessingPipeline.augmentation.MoleculeSampleShuffler import MoleculeSampleShuffler
 from PreprocessingPipeline.TextFileCombiner import TextFileCombiner
 from misc.download_data import download_and_extract_pubchem_compounds
-
+from PreprocessingPipeline.SpectraExtracta import extract_spectra
+from PreprocessingPipeline.SpectrumToSequence import SpectrumToSequence
+from nmr_sequence_dataset_creation.PairCreator import pair
+from nmr_sequence_dataset_creation.DatasetCreator import create_dataset
+from nmr_sequence_dataset_creation.BigDatasetCreator import load_datasets_from_directory, CustomCombinedDataset
 import os
 import re
 
@@ -22,34 +26,22 @@ import re
 
 ATOM_DIMENSION = 12 # Number of atom-Constants --> depends on the Dictionary 
 MAX_BONDS = 4 # max number of bonds: default is 4 --> Octet rule (As each bond contains two electrons [Hydrogen gets handeled specially])
-MOL_MAX_LENGTH = 50 # max length of molecules: the "length" refers to the number of atoms notated in the moltable --> many implicit Hydrogens are not counted
-MAX_PERMUTATIONS = 5 # These are the augmented Versions --> Set it to the value that you want. Pobably something line 1000 would be appropriate. Although that would result in huge amounts of samples.
+MOL_MAX_LENGTH = 35 # max length of molecules: the "length" refers to the number of atoms notated in the moltable --> many implicit Hydrogens are not counted
+MAX_PERMUTATIONS = 10                                   # These are the augmented Versions --> Set it to the value that you want. Pobably something line 1000 would be appropriate. Although that would result in huge amounts of samples.
 
 class Verarbeiter():
     def __init__(self, ):
         t = 1
         print(t)
 
-    def prepare_raw_data(self, db_file_directory):
-        base_dir = "data"
-
-        self._prepare_raw_data_substep_I(db_file_directory, base_dir)
-
-        analyzer = DirectoryAnalyzer("data/temp/V_original_data") 
-        analyzer.scan_directory()
-        data = analyzer.get_data()
-
-        
-        for i in data.numbers:
-            print("----------------------------------------")
-            print(f"Starte mit verarbeitung von Nummer: {i} von {MOL_MAX_LENGTH}")
-
-            self._prepare_raw_data_substep_II(base_dir, i)
+      
     
 
-    def _prepare_raw_data_substep_I(self, db_file_directory, base_dir):
+    def prepare_raw_data(self, db_file_directory):
         # Process all the molecule files from the database file directory
-        
+        base_dir = "data"
+
+
         counter = 0
 
         for filename in os.listdir(db_file_directory):
@@ -91,7 +83,7 @@ class Verarbeiter():
                 output_dir = os.path.join(base_dir, f'temp/V_original_data')
                 sorter.sort_files(significant_output, output_dir)
 
-    def _prepare_raw_data_substep_II(self, base_dir1, number):
+    def prepare_molecules(self, base_dir1, number):
         input_dir = os.path.join(base_dir1, "temp/V_original_data",str(number))
 
         # 1: Combine all individual files into one long file based on the file length 
@@ -114,16 +106,15 @@ class Verarbeiter():
         return sorted(numbers)
        
  
-    def _make_sequence_data(self):
+    def make_sequence_data(self):
         numbers = self.extract_numbers_from_filenames("data/temp_II/augmented_data") 
         
-        print("hello world")
         for i in numbers:
             print("----------------------------------------")
             print(f"Start with MolToSequence conversion of the molecules with length: {i} out of {MOL_MAX_LENGTH}")
 
             input_file = os.path.join(f"data/temp_II/augmented_data/shuffled_molecules_{i}.txt")
-            output_dir = f"data/output_molsequences_{MAX_PERMUTATIONS}"   # f"data/Output_{MAX_PERMUTATIONS}"
+            output_dir = f"molsequences"   # f"data/Output_{MAX_PERMUTATIONS}"
             molToSequenceFunction(input_file, output_dir, i)
 
 
@@ -137,10 +128,53 @@ class Verarbeiter():
             molToSequenceFunction(input_file, output_dir, test_number, config=config)
 
 
+    def make_nmr_dataset(self):
+        numbers = self.extract_numbers_from_filenames("data/temp_II/augmented_data") 
+        for number in numbers:        
+            self._make_nmr_subdataset(number)
+        
+            
+        datasets = load_datasets_from_directory("data/nmr_temp/length_datasets")
+        combined_dataset = CustomCombinedDataset(datasets)
+        
+        # Dataset speichern
+        combined_dataset.save_dataset('data/datasets/MixedNMRSpectrumDataset.pt')
+
+
+
+
+    def _make_nmr_subdataset(self, number):
+        # 1. Extract Spectra from raw data
+        raw_molecule_data_path = f"data/temp_II/original_data/molecules_{number}.txt"
+        raw_spectra_path = f"data/nmr_temp/raw_spectra/spectra_{number}.txt"
+        spectra_dir_path = f"data/nmr_temp/raw_spectra/"
+        extract_spectra(raw_molecule_data_path, raw_spectra_path, spectra_dir_path)
+
+        # 2. Reformat Spectra to Sequences
+        spectra_path = f'data/nmr_temp/sequence_spectra/seqspectra_{number}.txt'
+        parser = SpectrumToSequence(raw_spectra_path, spectra_path)
+        parser.process_all()
+
+        # 3. Produce ID Pair Dictionary
+        matched_dict_name = f"data/nmr_temp/matchings/matchings_{number}.json"
+        molecule_sequence_data_path = f"data/molsequences/Länge_{number}.json"
+        pair(matched_dict_name,  molecule_sequence_data_path, spectra_path)
+
+        # 4. Create and Save Subdataset based on length
+        save_path=f"data/nmr_temp/length_datasets/nmr_dataset_{number}.pt"
+        input_sequences = f"data/molsequences/Länge_{number}.json"
+        matched_labels = matched_dict_name
+        create_dataset(input_sequences, matched_labels, save_path)
+
+
+
+
+
+
 
 def create_directory_structure():
     # List of directories to create
-    directories = ["data", "data/src", "data/src/pubchem_compounds"]
+    directories = ["data", "data/datasets", "data/src", "data/src/pubchem_compounds", 'data/nmr_temp/sequence_spectra', 'data/nmr_temp/matchings/', "data/nmr_temp/length_datasets/"]
     
     # Loop through each directory and create it if it doesn't exist
     for directory in directories:
@@ -152,19 +186,31 @@ if __name__ == "__main__":
     # Setup
     create_directory_structure()
 
-    # Script begin
-    ''' download_and_extract_pubchem_compounds(
-        output_dir="data/src/pubchem_compounds",  # Directory to store extracted files
-        start=1,                         # Start of compound range
-        end=500000,                     # End of compound range (adjust as needed)
-        step=500000                      # Step size for each file batch
-    )'''
-    
-    db_file_directory = "data/src/pubchem_compounds/"
+
+
+    db_file_directory = "NMRShiftDB2"
     
     this = Verarbeiter()
-    #  this.prepare_raw_data(db_file_directory)  # prepare the raw data
-    this._make_sequence_data()                # convert it into the LatentMol Sequence format
+    '''this.prepare_raw_data(db_file_directory)  # prepare the raw data
+
+
+
+
+    analyzer = DirectoryAnalyzer("data/temp/V_original_data") 
+    analyzer.scan_directory()
+    data = analyzer.get_data()
+
+    base_dir = "data"
+    for i in data.numbers:
+        print("----------------------------------------")
+        print(f"Starte mit verarbeitung von Nummer: {i} von {MOL_MAX_LENGTH}")
+
+        this.prepare_molecules(base_dir, i)
+    '''
+
+
+    # this.make_sequence_data()                # convert it into the LatentMol Sequence format
+    this.make_nmr_dataset()
 
 
 # Copyright (c) 2025 Noah Baiersdorf
