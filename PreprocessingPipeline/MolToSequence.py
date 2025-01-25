@@ -2,8 +2,6 @@ import os
 import json
 from typing import List, Dict, Tuple, Optional
 from copy import deepcopy
-
-# For demo purposes, re-import the same atom constants as in the original code
 from misc.PSE_Data import atom_dict_normalized as atom_constants
 
 class MolToSequence:
