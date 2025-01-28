@@ -191,7 +191,7 @@ if __name__ == "__main__":
     db_file_directory = "NMRShiftDB2"
     
     this = Verarbeiter()
-    '''this.prepare_raw_data(db_file_directory)  # prepare the raw data
+    this.prepare_raw_data(db_file_directory)  # prepare the raw data
 
 
 
@@ -206,7 +206,7 @@ if __name__ == "__main__":
         print(f"Starte mit verarbeitung von Nummer: {i} von {MOL_MAX_LENGTH}")
 
         this.prepare_molecules(base_dir, i)
-    '''
+    
 
 
     # this.make_sequence_data()                # convert it into the LatentMol Sequence format
