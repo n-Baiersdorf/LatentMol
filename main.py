@@ -117,7 +117,7 @@ class Verarbeiter():
     def _make_sequence_data(self):
         numbers = self.extract_numbers_from_filenames("data/temp_II/augmented_data") 
         
-       for i in numbers:
+        for i in numbers:
             print("----------------------------------------")
             print(f"Start with MolToSequence conversion of the molecules with length: {i} out of {MOL_MAX_LENGTH}")
 
