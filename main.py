@@ -593,9 +593,9 @@ if __name__ == "__main__":
     # Kommentieren Sie die folgenden Zeilen ein, um die Datenvorverarbeitung zu starten
     
     # PubChem-Daten herunterladen (falls noch nicht vorhanden)
-    download_dir = "test_src"
-    # os.makedirs(download_dir, exist_ok=True)
-    # download_and_extract_pubchem_compounds(download_dir)
+    download_dir = "src"
+    os.makedirs(download_dir, exist_ok=True)
+    download_and_extract_pubchem_compounds(download_dir)
     #
     # # Rohdaten vorbereiten
     processor.prepare_raw_data(download_dir)
