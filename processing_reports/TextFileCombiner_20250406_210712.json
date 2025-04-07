@@ -1,0 +1,9 @@
+{
+  "processor_name": "TextFileCombiner",
+  "start_time": "2025-04-06T21:07:12.293955",
+  "total_processed": 5222,
+  "errors": 0,
+  "warnings": 0,
+  "step_specific": {},
+  "end_time": "2025-04-06T21:07:12.507833"
+}

@@ -1,0 +1,28 @@
+{
+  "processor_name": "MoleculeElementFilter",
+  "start_time": "2025-04-06T20:39:15.632769",
+  "total_processed": 1,
+  "errors": 0,
+  "warnings": 0,
+  "step_specific": {
+    "element_stats": {
+      "allowed_elements": [
+        "H",
+        "C",
+        "O",
+        "N",
+        "F",
+        "P",
+        "S",
+        "Cl",
+        "Br",
+        "I"
+      ],
+      "found_elements": {},
+      "valid_molecules": 1,
+      "invalid_molecules": 0,
+      "element_violations": {}
+    }
+  },
+  "end_time": "2025-04-06T20:39:15.633344"
+}

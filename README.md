@@ -1,141 +1,107 @@
-# LatentMol: Preprocessing Pipeline for Deep Molecular Representation Learning
+# LatentMol
 
-Welcome to the **LatentMol** repository! This project focuses on the development of a holistic molecular input format designed to enhance data-driven modeling in chemistry. The repository currently contains the unfinished but roughly functional **preprocessing pipeline**, which serves as the foundation for preparing large datasets for future model training.
+Ein Deep Learning Framework für molekulare Sequenzen basierend auf Transformern.
 
----
+## Beschreibung
 
-## Table of Contents
-- [Project Overview](#project-overview)
-- [Current Status](#current-status)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Future Plans](#future-plans)
-- [Contributing](#contributing)
-- [License](#license)
+LatentMol ist ein innovatives Framework zur Verarbeitung und Analyse von molekularen Strukturen mittels Deep Learning. Es transformiert chemische Moleküle in spezielle Sequenzen, die für Transformer-basierte Modelle optimiert sind.
 
----
+## Hauptmerkmale
 
-## Project Overview
-
-LatentMol aims to teach artificial neural networks the "language" of molecules via deep molecular representation learning. 
-For this the input embedding shall integrate key chemical concepts such as:
-- Mesomeric effects (not implemented yet)
-- Protonation states (not implemented yet)
-- Intermolecular interactions (not implemented yet)
-
-The long-term goal is to enable applications such as reaction modeling, spectroscopic data analysis, and molecular property prediction. While the project envisions a comprehensive framework, this repository currently focuses on the **preprocessing pipeline**.
-
----
-
-## Current Status
-
-At this stage, the repository includes:
-1. **Preprocessing Pipeline**: Converts molecular data (e.g., MolTables) into a custom sequence format for training Transformer models.
-   - Filters molecules based on length, elements, and isotopes for consistency
-   - Normalizes appropriately for tanh activation function in Transformer input layers
-
-2. **Basic Sequence Transformation**: Implements the foundation of the LatentMol input format
-
-## Experimental Branch: NMR-Prediction-Transformer
-
-This experimental branch explores training a Transformer model on NMRShiftDB2 data from the University of Cologne. The approach:
-
-- Handles NMR prediction as a sequence-to-sequence task
-- Processes variable-length NMR spectra sequences
-- Implements a molecule-to-spectrum model using LatentMol sequence format
-
----
-
-## Features
-
-- **Data Filtering**: Removes outliers such as non-standard isotopes or overly complex molecules.
-- **Sequence Transformation**: Converts molecular data into LatentMol's input format.
-- **Length-Based Sorting**: Organizes molecules by size for better handling during preprocessing.
-- **Scalability**: Partly designed to handle large datasets efficiently.
-
----
+- Molekül-zu-Sequenz Konvertierung
+- Automatische Datenvorverarbeitung
+- Molekül-Augmentierung
+- Parallele Verarbeitung
+- Optimierte Performance für High-End-Hardware
 
 ## Installation
 
-To set up the preprocessing pipeline, follow these steps:
+1. Klonen Sie das Repository:
+```bash
+git clone git@github.com:n-Baiersdorf/LatentMol.git
+cd LatentMol
+```
 
-1. Clone this repository:
+2. Erstellen Sie eine virtuelle Umgebung:
+```bash
+python -m venv venv
+source venv/bin/activate  # Unter Linux/Mac
+# oder
+.\venv\Scripts\activate  # Unter Windows
+```
 
+3. Installieren Sie die Abhängigkeiten:
+```bash
+pip install -r requirements.txt
+```
 
-```git clone https://github.com/n-Baiersdorf/LatentMol.git```
-```cd latentmol```
->
+## Verwendung
 
-2. Ensure you have Python 3.8+ installed
+### Datenvorverarbeitung
 
+1. Laden Sie die PubChem-Daten herunter
+2. Führen Sie die Vorverarbeitung durch:
+```python
+from main import Verarbeiter
 
-3. Create virtual environment:
+processor = Verarbeiter()
+processor.prepare_raw_data("pfad_zu_ihren_daten")
+processor._make_sequence_data()
+```
 
+### Molekül-Augmentierung
 
-```python -m venv myenv```
+```python
+from main import Verarbeiter
 
+processor = Verarbeiter()
+processor.augment_molecules(
+    input_path="pfad_zu_ihren_molekuelen",
+    output_dir="augmented_output",
+    max_variants_per_molecule=5,
+    random_selection=True
+)
+```
 
-4. Activate virtual environment:
+## Konfiguration
 
+Die Hauptkonfigurationsparameter befinden sich in `main.py`:
 
-   Linux & MacOS: ```source .venv/bin/activate```
+- `ATOM_DIMENSION`: Dimension der Atom-Konstanten
+- `MAX_BONDS`: Maximale Anzahl von Bindungen
+- `MOL_MIN_LENGTH`: Minimale Moleküllänge
+- `MOL_MAX_LENGTH`: Maximale Moleküllänge
+- `MAX_PERMUTATIONS`: Maximale Anzahl von Augmentierungen
 
+## Verzeichnisstruktur
 
-   Windows: ```.venv/bin/activate```
+```
+LatentMol/
+├── PreprocessingPipeline/     # Vorverarbeitungs-Pipeline
+├── misc/                      # Hilfsfunktionen
+├── main.py                    # Hauptskript
+├── requirements.txt           # Abhängigkeiten
+└── README.md                  # Diese Datei
+```
 
+## Anforderungen
 
-6. Install dependencies:
+- Python 3.8+
+- RDKit
+- NumPy
+- Pandas
+- tqdm
+- psutil
 
+## Lizenz
 
-```pip install -r requirements.txt```
+MIT License
 
+## Autor
 
+Noah Baiersdorf
 
----
+## Kontakt
 
-## Usage
-
-Run the ```main.py``` script
-
-In it you can configure some parameters, though the only significant ones are:
-1. The Number of Permutations (these are augmented versions of molecules)
-2. The Number of Molecules to download from PubChem (the script does it automatically) --> you can define it in steps of 500.000
-
----
-
-## Future Plans
-
-The following features are planned for future releases:
-1. **Model Training**: Implementation of LatentMol-BERT using PyTorch. Auxiliary training tasks are supposed to be:
-   1. NSP(Next Sentence Prediction)-like prediction of multiple molecules for preperation of reaction modelling
-   2. MSM(Masked Sequence Modelling) so basically Diffusion
-   3. Reconstruction via a Decoder-Head
-   4. experimental exercises involving image-data such as structure drawings and spectral data 
-3. **Evaluation Metrics**: Incorporation of benchmarks to compare LatentMol with existing methods.
-4. **Reaction Modeling**: Expansion to support intermolecular interactions and dynamic processes.
-5. **Integration with Lab Tools**: Deployment as a laboratory companion program.
-
----
-
-## Contributing
-
-Contributions are welcome! If you'd like to contribute:
-1. Fork this repository.
-2. Create a feature branch (`git checkout -b feature-name`).
-3. Commit your changes (`git commit -m 'Add feature'`).
-4. Push to your fork (`git push origin feature-name`).
-5. Open a pull request.
-
-For major changes, please open an issue first to discuss your ideas.
-
----
-
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details.
-
----
-
-Thank you for exploring LatentMol! If you have any questions or suggestions, feel free to open an issue or contact us directly.
+Bei Fragen oder Problemen, öffnen Sie bitte ein Issue im GitHub Repository.
 

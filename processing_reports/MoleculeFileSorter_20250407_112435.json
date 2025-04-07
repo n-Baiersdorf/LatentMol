@@ -1,0 +1,9 @@
+{
+  "processor_name": "MoleculeFileSorter",
+  "start_time": "2025-04-07T11:24:31.917103",
+  "total_processed": 61464,
+  "errors": 0,
+  "warnings": 0,
+  "step_specific": {},
+  "end_time": "2025-04-07T11:24:35.446962"
+}

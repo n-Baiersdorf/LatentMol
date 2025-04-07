@@ -1,0 +1,22 @@
+{
+  "processor_name": "MoleculeAugmenter",
+  "start_time": "2025-04-06T20:57:50.026893",
+  "total_processed": 0,
+  "errors": 0,
+  "warnings": 0,
+  "step_specific": {
+    "augmentation_stats": {
+      "total_input_molecules": 1,
+      "total_generated_molecules": 2,
+      "conformers_generated": 3,
+      "perturbations_applied": 1,
+      "rotations_applied": 2,
+      "errors": {
+        "conformer_generation": 0,
+        "perturbation": 0,
+        "rotation": 0
+      }
+    }
+  },
+  "end_time": "2025-04-06T20:57:50.039750"
+}
