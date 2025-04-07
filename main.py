@@ -47,8 +47,7 @@ logging.basicConfig(
 ATOM_DIMENSION = 12 # Number of atom-Constants --> depends on the Dictionary 
 MAX_BONDS = 4 # max number of bonds: default is 4 --> Octet rule (As each bond contains two electrons [Hydrogen gets handeled specially])
 MOL_MIN_LENGTH = 1 # min length of molecules: the "length" refers to the number of atoms notated in the moltable --> many implicit Hydrogens are not counted
-MOL_MAX_LENGTH = 40 # max length of molecules: the "length" refers to the number of atoms notated in the moltable --> many implicit Hydrogens are not counted
-MAX_PERMUTATIONS = 5 # These are the augmented Versions --> Set it to the value that you want. Pobably something line 1000 would be appropriate. Although that would result in huge amounts of samples.
+MOL_MAX_LENGTH = 200 # max length of molecules: the "length" refers to the number of atoms notated in the moltable --> many implicit Hydrogens are not counted
 
 # Funktion zum Berechnen der molekularen Eigenschaften mit RDKit
 def calculate_molecular_properties(mol):
