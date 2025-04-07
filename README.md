@@ -4,7 +4,7 @@ Ein Deep Learning Framework für molekulare Sequenzen basierend auf Transformern
 
 ## Beschreibung
 
-LatentMol ist ein innovatives Framework zur Verarbeitung und Analyse von molekularen Strukturen mittels Deep Learning. Es transformiert chemische Moleküle in spezielle Sequenzen, die für Transformer-basierte Modelle optimiert sind.
+LatentMol: Framework zur Verarbeitung und Analyse von molekularen Strukturen mittels Deep Learning. Es transformiert chemische Moleküle in spezielle Sequenzen, die für Transformer-basierte Modelle geeignet sind.
 
 ## Hauptmerkmale
 
@@ -12,7 +12,6 @@ LatentMol ist ein innovatives Framework zur Verarbeitung und Analyse von molekul
 - Automatische Datenvorverarbeitung
 - Molekül-Augmentierung
 - Parallele Verarbeitung
-- Optimierte Performance für High-End-Hardware
 
 ## Installation
 
