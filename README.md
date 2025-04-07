@@ -23,7 +23,7 @@ cd LatentMol
 
 2. Erstellen Sie eine virtuelle Umgebung:
 ```bash
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate  # Unter Linux/Mac
 # oder
 .\venv\Scripts\activate  # Unter Windows
