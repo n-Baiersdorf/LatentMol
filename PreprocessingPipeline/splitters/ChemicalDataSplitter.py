@@ -28,8 +28,14 @@ class ChemicalDataSplitter(BaseProcessor):
         # Optimierte Ressourcennutzung
         self.num_cpus = mp.cpu_count()
         self.total_ram = psutil.virtual_memory().total
-        self.target_ram_usage = int(self.total_ram * 0.8)  # 80% der verfügbaren RAM
-        self.chunk_size = max(50 * 1024 * 1024, self.target_ram_usage // (self.num_cpus * 2))  # Min. 50MB pro Chunk
+        
+        # Dynamische Chunk-Größe basierend auf verfügbarem RAM
+        if self.total_ram > 32 * 1024 * 1024 * 1024:  # Mehr als 32GB RAM
+            self.target_ram_usage = int(self.total_ram * 0.8)  # 80% der verfügbaren RAM
+            self.chunk_size = max(100 * 1024 * 1024, self.target_ram_usage // (self.num_cpus * 2))  # Min. 100MB pro Chunk
+        else:
+            self.target_ram_usage = int(self.total_ram * 0.6)  # 60% der verfügbaren RAM
+            self.chunk_size = max(50 * 1024 * 1024, self.target_ram_usage // (self.num_cpus * 2))  # Min. 50MB pro Chunk
         
         self._load_checkpoint()
 
@@ -49,49 +55,69 @@ class ChemicalDataSplitter(BaseProcessor):
         return None
 
     def _process_chunk(self, chunk_data: Tuple[bytes, int]) -> List[Dict]:
-        """Verarbeitet einen Datei-Chunk parallel"""
-        chunk, start_pos = chunk_data
+        """Optimierte Chunk-Verarbeitung mit effizienter Molekül-Erkennung"""
+        chunk, position = chunk_data
         molecules = []
-        current_molecule = []
-        current_pos = start_pos
         
-        # Konvertiere bytes zu Text und verarbeite zeilenweise
-        text = chunk.decode('utf-8', errors='ignore')
-        for line in io.StringIO(text):
-            if line.startswith("$$$$"):
-                if current_molecule:
-                    molecule_content = "".join(current_molecule) + "$$$$\n"
-                    if db_id := self.extract_db_id(molecule_content):
-                        molecules.append({
-                            "content": molecule_content,
-                            "id": db_id,
-                            "position": current_pos
-                        })
-                    current_molecule = []
-            else:
-                current_molecule.append(line)
-            current_pos += len(line.encode())
+        # Suche nach Molekül-Trennern
+        separators = [m.start() for m in re.finditer(b'\$\$\$\$', chunk)]
         
+        if not separators:
+            return molecules
+            
+        # Verarbeite Moleküle zwischen den Trennern
+        for i in range(len(separators)):
+            start = separators[i] + 4 if i > 0 else 0
+            end = separators[i]
+            
+            if start >= end:
+                continue
+                
+            molecule_data = chunk[start:end].decode('utf-8', errors='ignore')
+            
+            # Extrahiere Molekül-ID
+            mol_id = f"molecule_{position + start}"
+            
+            molecules.append({
+                'id': mol_id,
+                'content': molecule_data,
+                'position': position + start
+            })
+            
         return molecules
 
     def _parallel_process_chunks(self, chunks: List[Tuple[bytes, int]]) -> None:
-        """Verarbeitet Chunks parallel mit ThreadPoolExecutor"""
-        with ThreadPoolExecutor(max_workers=self.num_cpus) as executor:
-            futures = [executor.submit(self._process_chunk, chunk) for chunk in chunks]
+        """Optimierte parallele Chunk-Verarbeitung mit ThreadPoolExecutor"""
+        # Dynamische Thread-Anzahl basierend auf CPU-Kernen
+        num_threads = min(self.num_cpus * 2, 32)  # Maximal 32 Threads
+        
+        with ThreadPoolExecutor(max_workers=num_threads) as executor:
+            # Verarbeite Chunks in Batches
+            batch_size = max(1, len(chunks) // num_threads)
             
-            for future in as_completed(futures):
-                try:
-                    molecules = future.result()
-                    for mol in molecules:
-                        output_file = self.output_directory / f"molecule_{mol['id']}.txt"
-                        output_file.write_text(mol['content'])
-                        self.total_processed += 1
-                        
-                        if self.total_processed % self.config.checkpoint_interval == 0:
-                            self.last_position = mol['position']
-                            self._save_checkpoint()
-                except Exception as e:
-                    self.logger.error(f"Fehler bei der Chunk-Verarbeitung: {e}")
+            for i in range(0, len(chunks), batch_size):
+                batch = chunks[i:i+batch_size]
+                futures = [executor.submit(self._process_chunk, chunk) for chunk in batch]
+                
+                for future in as_completed(futures):
+                    try:
+                        molecules = future.result()
+                        for mol in molecules:
+                            output_file = self.output_directory / f"molecule_{mol['id']}.txt"
+                            output_file.write_text(mol['content'])
+                            self.total_processed += 1
+                            
+                            if self.total_processed % self.config.checkpoint_interval == 0:
+                                self.last_position = mol['position']
+                                self._save_checkpoint()
+                                
+                            # Überwache Speichernutzung
+                            if psutil.Process().memory_percent() > 80:
+                                self.logger.warning("Hohe Speichernutzung - reduziere Batch-Größe")
+                                batch_size = max(1, batch_size // 2)
+                                
+                    except Exception as e:
+                        self.logger.error(f"Fehler bei der Chunk-Verarbeitung: {e}")
 
     def _save_checkpoint(self) -> None:
         """Speichert den aktuellen Verarbeitungsfortschritt"""
@@ -117,11 +143,12 @@ class ChemicalDataSplitter(BaseProcessor):
                 self.logger.warning(f"Fehler beim Laden des Checkpoints: {e}")
 
     def split_file(self) -> None:
-        """Hauptmethode zum Aufteilen der Moleküldatei mit optimierter Ressourcennutzung"""
+        """Optimierte Dateiaufteilung mit effizienter Ressourcennutzung"""
         try:
             file_size = os.path.getsize(self.input_file)
+            current_position = self.last_position if hasattr(self, 'last_position') else 0
+            
             chunks = []
-            current_position = self.last_position
             
             with open(self.input_file, 'rb') as file:
                 with tqdm(total=file_size, initial=current_position,

@@ -103,18 +103,37 @@ class Verarbeiter:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.setLevel(logging.INFO)
         
-        # Grundkonfiguration für die Verarbeitung - optimiert für High-End-Hardware
+        # Dynamische Konfiguration basierend auf Systemressourcen
+        total_ram = psutil.virtual_memory().total
+        cpu_count = multiprocessing.cpu_count()
+        
+        # Optimierte Batch-Größe basierend auf verfügbarem RAM
+        if total_ram > 32 * 1024 * 1024 * 1024:  # Mehr als 32GB RAM
+            batch_size = 10000
+            max_ram_usage = 0.9  # 90% RAM-Nutzung
+        else:
+            batch_size = 5000
+            max_ram_usage = 0.8  # 80% RAM-Nutzung
+            
+        # Optimierte Prozessanzahl für High-End-Systeme
+        if cpu_count > 8:  # High-End-System
+            num_processes = int(cpu_count * 0.8)  # 80% der Kerne
+            checkpoint_interval = 20000  # Größere Checkpoint-Intervalle
+        else:  # Laptop/Standard-System
+            num_processes = int(cpu_count * 0.95)  # 95% der Kerne
+            checkpoint_interval = 10000
+            
+        # Grundkonfiguration für die Verarbeitung
         self.config = ProcessingConfig(
-            batch_size=5000,          # Erhöht von 1000 auf 5000
-            max_ram_usage=0.9,        # Erhöht von 0.75 auf 0.9 (90% RAM-Nutzung)
-            checkpoint_interval=10000, # Erhöht von 5000 auf 10000
+            batch_size=batch_size,
+            max_ram_usage=max_ram_usage,
+            checkpoint_interval=checkpoint_interval,
             log_level=logging.INFO
         )
         
-        # Optimierte Parallelisierung: Maximale Kernnutzung für Ryzen 7 7700
-        # Nutzung von 95% der verfügbaren Kerne für beste Performance
-        self.num_processes = max(1, int(multiprocessing.cpu_count() * 0.95))
-        self.logger.info(f"Verwende {self.num_processes} CPU-Kerne für Parallelverarbeitung")
+        self.num_processes = num_processes
+        self.logger.info(f"Systemkonfiguration: {cpu_count} CPU-Kerne, {total_ram/1024/1024/1024:.1f}GB RAM")
+        self.logger.info(f"Verwende {self.num_processes} Prozesse, Batch-Größe: {batch_size}")
 
     def prepare_raw_data(self, db_file_directory: str) -> None:
         """Optimierte Version der Datenvorverarbeitung"""
@@ -333,20 +352,15 @@ class Verarbeiter:
 
     def _process_single_molecule(self, file_path, output_dir, augmentation_config, max_variants, random_selection):
         """
-        Verarbeitet ein einzelnes Molekül und erzeugt nur die ausgewählten Varianten.
-        
-        Args:
-            file_path: Pfad zur Moleküldatei
-            output_dir: Ausgabeverzeichnis
-            augmentation_config: Konfiguration für die Augmentierung
-            max_variants: Maximale Anzahl Varianten
-            random_selection: Ob zufällig ausgewählt werden soll
-            
-        Returns:
-            Liste der erzeugten Dateien
+        Optimierte Version der Einzelmolekülverarbeitung mit Caching
         """
         try:
-            # 1. Bestimme die Gesamtzahl möglicher Varianten
+            # Cache für häufig verwendete Berechnungen
+            cache_key = f"{file_path}_{max_variants}"
+            if hasattr(self, '_molecule_cache') and cache_key in self._molecule_cache:
+                return self._molecule_cache[cache_key]
+            
+            # Bestimme die Gesamtzahl möglicher Varianten
             num_conformers = augmentation_config.get("num_conformers", 3)
             use_perturbation = augmentation_config.get("use_geometric_perturbation", True)
             use_rotation = augmentation_config.get("use_rotation_translation", True)
@@ -355,11 +369,11 @@ class Verarbeiter:
             # Berechne die Gesamtzahl möglicher Varianten
             total_variants = num_conformers
             if use_perturbation:
-                total_variants *= 1  # Jedes Konformer wird einmal gestört
+                total_variants *= 1
             if use_rotation:
-                total_variants *= num_rotations  # Jedes gestörte Konformer wird rotiert
+                total_variants *= num_rotations
             
-            # 2. Wähle die Varianten aus, die erzeugt werden sollen
+            # Wähle die Varianten aus
             basename = os.path.splitext(os.path.basename(file_path))[0]
             variant_indices = list(range(total_variants))
             
@@ -371,19 +385,19 @@ class Verarbeiter:
             else:
                 selected_indices = variant_indices
             
-            # 3. Erzeugen Sie nur die ausgewählten Varianten
-            # Erstelle eine angepasste Konfiguration für die Auswahl
-            selected_files = []
-            
-            # Rufe augment_molecules mit den ausgewählten Varianten auf
-            # Wir übergeben die ausgewählten Indizes als zusätzlichen Parameter
+            # Erstelle eine angepasste Konfiguration
             custom_config = augmentation_config.copy()
             custom_config["selected_variant_indices"] = selected_indices
             
+            # Verarbeite das Molekül
             augmented_files = augment_molecules(file_path, output_dir, custom_config)
-            selected_files.extend(augmented_files)
             
-            return selected_files
+            # Cache die Ergebnisse
+            if not hasattr(self, '_molecule_cache'):
+                self._molecule_cache = {}
+            self._molecule_cache[cache_key] = augmented_files
+            
+            return augmented_files
             
         except Exception as e:
             self.logger.error(f"Fehler bei der Verarbeitung von {file_path}: {str(e)}")
@@ -393,18 +407,7 @@ class Verarbeiter:
                          max_variants_per_molecule=2, random_selection=True, 
                          batch_size=500, num_processes=None):
         """
-        Augmentiert Moleküle aus einer Datei oder einem Verzeichnis - optimiert für Millionen von Molekülen.
-        Zuerst werden die zu erzeugenden Varianten ausgewählt, dann nur diese erstellt.
-        Parallelisierung und Batch-Verarbeitung für optimale Ressourcennutzung.
-        
-        Args:
-            input_path: Pfad zur Eingabedatei oder zum Eingabeverzeichnis
-            output_dir: Pfad zum Ausgabeverzeichnis (optional)
-            augmentation_config: Konfiguration für die Augmentierung (optional)
-            max_variants_per_molecule: Maximale Anzahl an Varianten pro Molekül
-            random_selection: Ob die Varianten zufällig ausgewählt werden sollen
-            batch_size: Anzahl der Moleküle, die gleichzeitig verarbeitet werden
-            num_processes: Anzahl der parallelen Prozesse (None = automatisch)
+        Optimierte Version der Molekülaugmentierung mit verbesserter Parallelisierung
         """
         start_time = time.time()
         
@@ -420,6 +423,7 @@ class Verarbeiter:
             
         os.makedirs(output_dir, exist_ok=True)
         
+        # Logging der Konfiguration
         self.logger.info(f"Starte optimierte Augmentierung von: {input_path}")
         self.logger.info(f"Ausgabe in: {output_dir}")
         self.logger.info(f"Konfiguration: {augmentation_config}")
@@ -428,10 +432,8 @@ class Verarbeiter:
         self.logger.info(f"Batch-Größe: {batch_size}")
         self.logger.info(f"Prozesse: {num_processes}")
         
-        total_files = 0
-        all_mol_files = []
-        
         # Sammle alle zu verarbeitenden Dateien
+        all_mol_files = []
         if os.path.isfile(input_path):
             if input_path.endswith(('.mol', '.sdf')):
                 all_mol_files.append(input_path)
@@ -440,18 +442,14 @@ class Verarbeiter:
                 for file in files:
                     if file.endswith(('.mol', '.sdf')):
                         all_mol_files.append(os.path.join(root, file))
-        else:
-            self.logger.error(f"Eingabepfad {input_path} existiert nicht!")
-            return []
-            
-        # Keine Dateien gefunden
+        
         if not all_mol_files:
             self.logger.warning(f"Keine .mol oder .sdf Dateien in {input_path} gefunden!")
             return []
             
         self.logger.info(f"Gefunden: {len(all_mol_files)} Moleküldateien")
         
-        # Definiere die Verarbeitungsfunktion mit den übrigen Parametern
+        # Definiere die Verarbeitungsfunktion
         process_func = partial(
             self._process_single_molecule, 
             output_dir=output_dir, 
@@ -463,10 +461,10 @@ class Verarbeiter:
         # Verarbeite die Dateien in Batches
         all_selected_files = []
         
-        # Erstelle einen Multiprocessing-Pool
+        # Erstelle einen Multiprocessing-Pool mit optimierter Prozessanzahl
         pool = multiprocessing.Pool(processes=num_processes)
         
-        # Verarbeite in Batches, um den RAM zu schonen
+        # Verarbeite in Batches
         for i in range(0, len(all_mol_files), batch_size):
             batch = all_mol_files[i:i+batch_size]
             
@@ -474,18 +472,17 @@ class Verarbeiter:
             self.logger.info(f"Verarbeite Batch {i//batch_size + 1}/{(len(all_mol_files) + batch_size - 1)//batch_size}: {len(batch)} Moleküle")
             
             try:
-                # Verarbeite den Batch parallel
+                # Verarbeite den Batch parallel mit Fortschrittsanzeige
                 with tqdm(total=len(batch), desc="Moleküle", unit="mol") as pbar:
-                    # Verwende imap, um einen Iterator zu erhalten und den Fortschritt zu verfolgen
                     for result in pool.imap_unordered(process_func, batch):
                         all_selected_files.extend(result)
                         pbar.update(1)
                         
-                # Zeige aktuelle Speichernutzung an
+                # Überwache und optimiere die Ressourcennutzung
                 ram_usage = psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
                 self.logger.info(f"RAM-Verbrauch: {ram_usage:.2f} MB")
                 
-                # Gib RAM frei, indem wir den Garbage Collector erzwingen
+                # Gib RAM frei
                 import gc
                 gc.collect()
                 

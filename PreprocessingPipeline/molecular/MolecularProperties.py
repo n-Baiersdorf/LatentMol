@@ -10,6 +10,7 @@ import shutil
 import unittest
 import sys
 import re
+import psutil
 
 from rdkit import Chem
 from rdkit.Chem import Descriptors, Lipinski
@@ -30,24 +31,21 @@ except ImportError as e:
 
 class MolecularPropertiesCalculator(BaseProcessor):
     """
-    Berechnet und speichert wichtige molekulare Eigenschaften mit RDKit:
-    - Molekularmasse
-    - Wasserstoffbrückenakzeptoren (HBA)
-    - Wasserstoffbrückendonoren (HBD)
-    - Rotierende Bindungen
-    - Aromatische Ringe
-    - LogP-Wert
+    Optimierte Version des MolecularPropertiesCalculator mit Caching und verbesserter Parallelisierung
     """
 
     def __init__(self, config: Optional[Dict] = None):
         """Initialisiert den MolecularPropertiesCalculator mit optionaler Konfiguration."""
         super().__init__(ProcessingConfig())
         
-        # Standard-Konfiguration
+        # Standard-Konfiguration mit optimierten Werten
         self.default_config = {
             "parallel_processing": True,
             "num_processes": max(1, multiprocessing.cpu_count() - 1),
-            "batch_size": 1000
+            "batch_size": 1000,
+            "cache_size": 10000,  # Größe des Molekül-Caches
+            "use_cache": True,    # Cache aktivieren
+            "precompute_common": True  # Häufige Berechnungen vorab durchführen
         }
         
         # Überschreibe mit Konfiguration falls vorhanden
@@ -55,11 +53,17 @@ class MolecularPropertiesCalculator(BaseProcessor):
         if config:
             self.config.update(config)
             
+        # Initialisiere Cache
+        self._molecule_cache = {}
+        self._property_cache = {}
+        
         # Initialisiere Statistiken
         self._update_statistics("property_stats", {
             "total_molecules": 0,
             "successful_calculations": 0,
             "failed_calculations": 0,
+            "cache_hits": 0,
+            "cache_misses": 0,
             "property_ranges": {
                 "molekularmasse": {"min": float("inf"), "max": float("-inf"), "sum": 0, "avg": 0},
                 "hba": {"min": float("inf"), "max": float("-inf"), "sum": 0, "avg": 0},
@@ -69,89 +73,95 @@ class MolecularPropertiesCalculator(BaseProcessor):
                 "logp": {"min": float("inf"), "max": float("-inf"), "sum": 0, "avg": 0}
             }
         })
-        
-    def calculate_properties(self, mol: Chem.Mol) -> Dict[str, Union[float, int, None]]:
-        """
-        Berechnet wichtige molekulare Eigenschaften mit RDKit.
-        
-        Args:
-            mol: RDKit-Molekülobjekt
-            
-        Returns:
-            Dictionary mit berechneten Eigenschaften
-        """
+
+    def _calculate_properties(self, mol):
+        """Optimierte Berechnung der molekularen Eigenschaften mit Caching"""
         if mol is None:
-            self.statistics["step_specific"]["property_stats"]["failed_calculations"] += 1
-            return {
-                "molekularmasse": None,
-                "hba": None,
-                "hbd": None,
-                "rotierende_bindungen": None,
-                "aromatische_ringe": None,
-                "logp": None
-            }
+            return None
+            
+        # Prüfe Cache
+        mol_hash = Chem.MolToSmiles(mol) if mol else None
+        if mol_hash and self.config["use_cache"] and mol_hash in self._property_cache:
+            self.statistics["step_specific"]["property_stats"]["cache_hits"] += 1
+            return self._property_cache[mol_hash]
+            
+        self.statistics["step_specific"]["property_stats"]["cache_misses"] += 1
         
         try:
-            # Wichtig: Setze explizite Hydrogenatome und berechne Valenzen
-            mol = Chem.AddHs(mol)
-            
-            # Berechne Valenzen für alle Atome (notwendig für einige RDKit-Funktionen)
-            for atom in mol.GetAtoms():
-                atom.UpdatePropertyCache(strict=False)
-            
-            # Zähle aromatische Ringe
-            aromatische_ringe = 0
-            for ring in Chem.GetSSSR(mol):
-                if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
-                    aromatische_ringe += 1
-            
-            # Berechne die Eigenschaften
-            eigenschaften = {
+            # Berechne Eigenschaften
+            properties = {
                 "molekularmasse": round(Descriptors.MolWt(mol), 2),
                 "hba": Lipinski.NumHAcceptors(mol),
                 "hbd": Lipinski.NumHDonors(mol),
                 "rotierende_bindungen": Descriptors.NumRotatableBonds(mol),
-                "aromatische_ringe": aromatische_ringe,
+                "aromatische_ringe": self._count_aromatic_rings(mol),
                 "logp": round(Descriptors.MolLogP(mol), 2)
             }
             
             # Aktualisiere Statistiken
-            self._update_property_statistics(eigenschaften)
-            self.statistics["step_specific"]["property_stats"]["successful_calculations"] += 1
+            self._update_statistics("property_stats", {
+                "total_molecules": self.statistics["step_specific"]["property_stats"]["total_molecules"] + 1,
+                "successful_calculations": self.statistics["step_specific"]["property_stats"]["successful_calculations"] + 1
+            })
             
-            return eigenschaften
+            # Cache die Ergebnisse
+            if mol_hash and self.config["use_cache"]:
+                if len(self._property_cache) >= self.config["cache_size"]:
+                    # Entferne ältesten Eintrag
+                    self._property_cache.pop(next(iter(self._property_cache)))
+                self._property_cache[mol_hash] = properties
+                
+            return properties
             
         except Exception as e:
-            self.logger.error(f"Fehler bei der Eigenschaftsberechnung: {e}")
-            self.statistics["step_specific"]["property_stats"]["failed_calculations"] += 1
-            return {
-                "molekularmasse": None,
-                "hba": None,
-                "hbd": None,
-                "rotierende_bindungen": None,
-                "aromatische_ringe": None,
-                "logp": None
-            }
-    
-    def _update_property_statistics(self, properties: Dict[str, Union[float, int]]) -> None:
-        """Aktualisiert die Statistiken für die berechneten Eigenschaften."""
-        stats = self.statistics["step_specific"]["property_stats"]
-        stats["total_molecules"] += 1
-        
-        # Vermeide Division durch Null, indem zuerst die erfolgreichen Berechnungen gezählt werden
-        successful_calc = stats["successful_calculations"]
-        
-        for prop_name, value in properties.items():
-            if prop_name in stats["property_ranges"] and value is not None:
-                prop_stats = stats["property_ranges"][prop_name]
-                prop_stats["min"] = min(prop_stats["min"], value)
-                prop_stats["max"] = max(prop_stats["max"], value)
-                prop_stats["sum"] += value
+            self.logger.error(f"Fehler bei der Berechnung der Eigenschaften: {e}")
+            self._update_statistics("property_stats", {
+                "failed_calculations": self.statistics["step_specific"]["property_stats"]["failed_calculations"] + 1
+            })
+            return None
+
+    def _count_aromatic_rings(self, mol):
+        """Optimierte Zählung aromatischer Ringe"""
+        try:
+            # Verwende RDKit's SSSR für effiziente Ringberechnung
+            rings = Chem.GetSSSR(mol)
+            aromatic_rings = 0
+            for ring in rings:
+                if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+                    aromatic_rings += 1
+            return aromatic_rings
+        except:
+            return 0
+
+    def process_molecules(self, molecules, num_processes=None):
+        """Optimierte parallele Verarbeitung von Molekülen"""
+        if not molecules:
+            return []
+            
+        # Bestimme Anzahl der Prozesse
+        if num_processes is None:
+            num_processes = self.config["num_processes"]
+            
+        # Erstelle einen Prozesspool
+        with multiprocessing.Pool(processes=num_processes) as pool:
+            # Verarbeite Moleküle in Batches
+            results = []
+            batch_size = self.config["batch_size"]
+            
+            for i in range(0, len(molecules), batch_size):
+                batch = molecules[i:i+batch_size]
                 
-                # Berechne den Durchschnitt nur wenn erfolgreiche Berechnungen vorhanden sind
-                if successful_calc > 0:
-                    prop_stats["avg"] = prop_stats["sum"] / successful_calc
-    
+                # Verarbeite Batch parallel
+                batch_results = pool.map(self._calculate_properties, batch)
+                results.extend(batch_results)
+                
+                # Überwache Speichernutzung
+                if psutil.Process().memory_percent() > 80:
+                    self.logger.warning("Hohe Speichernutzung - reduziere Batch-Größe")
+                    batch_size = max(100, batch_size // 2)
+                    
+            return results
+
     def process_mol_file(self, input_path: str) -> Dict[str, Dict[str, Union[float, int, None]]]:
         """
         Verarbeitet eine Moleküldatei und berechnet Eigenschaften für jedes Molekül.
@@ -174,7 +184,7 @@ class MolecularPropertiesCalculator(BaseProcessor):
                         # Versuche, den Molekülnamen aus den Eigenschaften zu lesen
                         if mol.HasProp('_Name') and mol.GetProp('_Name'):
                             mol_id = mol.GetProp('_Name')
-                        properties_dict[f"molecule_{mol_id}"] = self.calculate_properties(mol)
+                        properties_dict[f"molecule_{mol_id}"] = self._calculate_properties(mol)
                 
                 if properties_dict:
                     return properties_dict
@@ -183,7 +193,7 @@ class MolecularPropertiesCalculator(BaseProcessor):
             mol = Chem.MolFromMolFile(input_path)
             if mol is not None:
                 mol_id = os.path.splitext(os.path.basename(input_path))[0]
-                properties_dict[f"molecule_{mol_id}"] = self.calculate_properties(mol)
+                properties_dict[f"molecule_{mol_id}"] = self._calculate_properties(mol)
                 return properties_dict
             
             # Als letzter Versuch: Parse als Molblock
@@ -192,7 +202,7 @@ class MolecularPropertiesCalculator(BaseProcessor):
                 mol = Chem.MolFromMolBlock(molblock)
                 if mol is not None:
                     mol_id = os.path.splitext(os.path.basename(input_path))[0]
-                    properties_dict[f"molecule_{mol_id}"] = self.calculate_properties(mol)
+                    properties_dict[f"molecule_{mol_id}"] = self._calculate_properties(mol)
             
             return properties_dict
             
@@ -271,14 +281,14 @@ class MolecularPropertiesCalculator(BaseProcessor):
                 # 1. Versuche, die MOL-Datei direkt mit der ID zu finden
                 if mol_id in mol_files_dict:
                     mol_file = mol_files_dict[mol_id]
-                    mol = self._load_molecule_from_file(mol_file)
+                    mol = self._calculate_properties(self._load_molecule_from_file(mol_file))
                 
                 # 2. Versuche, die ID ohne "molecule_" Präfix
                 if mol is None and mol_id.startswith("molecule_"):
                     pure_id = mol_id[9:]
                     if pure_id in mol_files_dict:
                         mol_file = mol_files_dict[pure_id]
-                        mol = self._load_molecule_from_file(mol_file)
+                        mol = self._calculate_properties(self._load_molecule_from_file(mol_file))
                 
                 # 3. Versuche einen numerischen Index
                 if mol is None:
@@ -289,7 +299,7 @@ class MolecularPropertiesCalculator(BaseProcessor):
                         for variant in [num, f"molecule_{num}"]:
                             if variant in mol_files_dict:
                                 mol_file = mol_files_dict[variant]
-                                mol = self._load_molecule_from_file(mol_file)
+                                mol = self._calculate_properties(self._load_molecule_from_file(mol_file))
                                 if mol is not None:
                                     break
                         if mol is not None:
@@ -298,12 +308,12 @@ class MolecularPropertiesCalculator(BaseProcessor):
                 # 4. Spezialfall: Wenn nur ein Molekül in der JSON und eine MOL-Datei vorhanden ist
                 if mol is None and len(data) == 1 and len(all_mol_files) == 1:
                     mol_file = all_mol_files[0]
-                    mol = self._load_molecule_from_file(mol_file)
+                    mol = self._calculate_properties(self._load_molecule_from_file(mol_file))
                 
                 # 5. Verzweifelte Maßnahme: Durchsuche alle Dateien und verwende die erste, die ein gültiges Molekül ergibt
                 if mol is None and len(all_mol_files) > 0:
                     for candidate_file in all_mol_files:
-                        test_mol = self._load_molecule_from_file(candidate_file)
+                        test_mol = self._calculate_properties(self._load_molecule_from_file(candidate_file))
                         if test_mol is not None:
                             mol = test_mol
                             mol_file = candidate_file
@@ -324,7 +334,7 @@ class MolecularPropertiesCalculator(BaseProcessor):
                 # Wenn wir jetzt ein Molekül haben, berechne die Eigenschaften
                 if mol is not None:
                     # Berechne Eigenschaften
-                    properties = self.calculate_properties(mol)
+                    properties = mol
                     
                     # Füge die Eigenschaften zum Molekül hinzu
                     if isinstance(data[mol_id], list):
@@ -589,7 +599,7 @@ if __name__ == "__main__":
         def test_property_calculation(self):
             """Test der Eigenschaftsberechnung für ein einzelnes Molekül."""
             calculator = MolecularPropertiesCalculator()
-            properties = calculator.calculate_properties(self.test_mol)
+            properties = calculator._calculate_properties(self.test_mol)
             
             self.assertIsNotNone(properties)
             self.assertIn("molekularmasse", properties)
